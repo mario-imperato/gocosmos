@@ -7,4 +7,5 @@ require (
 	github.com/btnguyen2k/consu/olaf v0.1.3
 	github.com/btnguyen2k/consu/reddo v0.1.4
 	github.com/btnguyen2k/consu/semita v0.1.4
+	github.com/rs/zerolog v1.28.0
 )
