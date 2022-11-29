@@ -579,9 +579,12 @@ func (c *RestClient) QueryDocuments(query QueryReq) *RespQueryDocs {
 		req.Header.Set("X-Ms-Documentdb-Query-EnableCrossPartition", "true")
 		req.Header.Set("x-ms-query-enable-crosspartition", "True")
 		if len(resultPkranges.Pkranges) > 0 {
+			log.Info().Msg("disabling parallel and partitionkeyRangeid")
 			// TODO: what if there are 2 pk ranges or more?
-			req.Header.Set("X-Ms-Documentdb-Query-ParallelizeCrossPartitionQuery", "true")
-			req.Header.Set("X-Ms-Documentdb-PartitionkeyRangeid", resultPkranges.Pkranges[0].Id)
+			/*
+				req.Header.Set("X-Ms-Documentdb-Query-ParallelizeCrossPartitionQuery", "true")
+				req.Header.Set("X-Ms-Documentdb-PartitionkeyRangeid", resultPkranges.Pkranges[0].Id)
+			*/
 		}
 	}
 	if query.ConsistencyLevel != "" {
