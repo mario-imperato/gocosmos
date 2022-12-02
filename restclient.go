@@ -12,6 +12,7 @@ import (
 	"github.com/btnguyen2k/consu/gjrc"
 	"github.com/btnguyen2k/consu/reddo"
 	"github.com/btnguyen2k/consu/semita"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/http"
 	"net/url"
@@ -544,7 +545,7 @@ func (c *RestClient) queryDocumentsForPkRange(baseReq *http.Request, pkRangeId s
 	req.Header.Set(restApiHeaderPartitionKeyRangeId, pkRangeId)
 	var result *RespQueryDocs
 	for {
-		log.Info().Interface("req", req).Msg("::queryDocumentsForPkRange")
+		log.Info().Interface("content-length", req.ContentLength).Msg("::queryDocumentsForPkRange request")
 		for n, v := range req.Header {
 			log.Info().Str("header-name", n).Interface("header-value", v).Msg("::queryDocumentsForPkRange headers")
 		}
@@ -554,6 +555,15 @@ func (c *RestClient) queryDocumentsForPkRange(baseReq *http.Request, pkRangeId s
 			tempResult.ContinuationToken = tempResult.RespHeader[respHeaderContinuation]
 			tempResult.CallErr = json.Unmarshal(tempResult.RespBody, &tempResult)
 			tempResult.Count = int64(len(tempResult.Documents))
+
+			var evt *zerolog.Event
+			if tempResult.CallErr != nil {
+				evt = log.Error().Err(tempResult.CallErr)
+			} else {
+				evt = log.Info()
+			}
+
+			evt.Int64("result-count", tempResult.Count).Msg("::queryDocumentsForPkRange returned data")
 		}
 		if result != nil {
 			tempResult.Count += result.Count
