@@ -574,7 +574,7 @@ func (c *RestClient) queryDocumentsForPkRange(baseReq *http.Request, pkRangeId s
 		if result.CallErr != nil || tempResult.ContinuationToken == "" {
 			break
 		}
-		req.Header.Set(restApiHeaderContinuation, tempResult.ContinuationToken)
+		req.Header.Set(respHeaderContinuation, tempResult.ContinuationToken)
 	}
 	return result
 }
@@ -648,7 +648,9 @@ func (c *RestClient) QueryDocuments(query QueryReq) *RespQueryDocs {
 	}
 
 	if query.CrossPartitionEnabled {
-		return c.queryDocumentsCrossPartitions(query, req)
+		req.Header.Set(restApiHeaderEnableCrossPartitionQuery, "true")
+		req.Header.Set(restApiHeaderParallelizeCrossPartitionQuery, "true")
+		// return c.queryDocumentsCrossPartitions(query, req)
 	}
 	resp := c.client.Do(req)
 	result := &RespQueryDocs{RestReponse: c.buildRestReponse(resp)}
