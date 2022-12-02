@@ -539,11 +539,15 @@ type QueryReq struct {
 }
 
 func (c *RestClient) queryDocumentsForPkRange(baseReq *http.Request, pkRangeId string) *RespQueryDocs {
+	log.Info().Msg("::queryDocumentsForPkRange")
 	req := baseReq.Clone(baseReq.Context())
 	req.Header.Set(restApiHeaderPartitionKeyRangeId, pkRangeId)
 	var result *RespQueryDocs
 	for {
 		log.Info().Interface("req", req).Msg("::queryDocumentsForPkRange")
+		for n, v := range req.Header {
+			log.Info().Str("header-name", n).Interface("header-value", v).Msg("::queryDocumentsForPkRange headers")
+		}
 		resp := c.client.Do(req)
 		tempResult := &RespQueryDocs{RestReponse: c.buildRestReponse(resp)}
 		if tempResult.CallErr == nil {
