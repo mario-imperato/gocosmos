@@ -543,6 +543,7 @@ func (c *RestClient) queryDocumentsForPkRange(baseReq *http.Request, pkRangeId s
 	req.Header.Set(restApiHeaderPartitionKeyRangeId, pkRangeId)
 	var result *RespQueryDocs
 	for {
+		log.Info().Interface("req", req).Msg("::queryDocumentsForPkRange")
 		resp := c.client.Do(req)
 		tempResult := &RespQueryDocs{RestReponse: c.buildRestReponse(resp)}
 		if tempResult.CallErr == nil {
