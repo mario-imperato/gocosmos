@@ -9,6 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/btnguyen2k/consu/gjrc"
+	"github.com/btnguyen2k/consu/reddo"
+	"github.com/btnguyen2k/consu/semita"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -17,10 +21,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/btnguyen2k/consu/gjrc"
-	"github.com/btnguyen2k/consu/reddo"
-	"github.com/btnguyen2k/consu/semita"
 )
 
 const (
@@ -37,7 +37,9 @@ const (
 //
 // httpClient is reused if supplied. Otherwise, a new http.Client instance is created.
 // connStr is expected to be in the following format:
-//     AccountEndpoint=<cosmosdb-restapi-endpoint>;AccountKey=<account-key>[;TimeoutMs=<timeout-in-ms>][;Version=<cosmosdb-api-version>][;AutoId=<true/false>][;InsecureSkipVerify=<true/false>]
+//
+//	AccountEndpoint=<cosmosdb-restapi-endpoint>;AccountKey=<account-key>[;TimeoutMs=<timeout-in-ms>][;Version=<cosmosdb-api-version>][;AutoId=<true/false>][;InsecureSkipVerify=<true/false>]
+//
 // If not supplied, default value for TimeoutMs is 10 seconds, Version is defaultApiVersion (which is "2018-12-31"), AutoId is true, and InsecureSkipVerify is false
 //
 // - AutoId is added since v0.1.2
@@ -565,12 +567,17 @@ func (c *RestClient) queryDocumentsForPkRange(baseReq *http.Request, pkRangeId s
 func (c *RestClient) queryDocumentsCrossPartitions(query QueryReq, req *http.Request) *RespQueryDocs {
 	resultPkranges := c.GetPkranges(query.DbName, query.CollName)
 	if resultPkranges.Error() != nil {
+		log.Error().Err(resultPkranges.Error()).Msg("::queryDocumentsCrossPartitions.... GetPkranges error")
 		return &RespQueryDocs{RestReponse: resultPkranges.RestReponse}
 	}
+
+	log.Info().Interface("resultPkranges", resultPkranges).Msg("::queryDocumentsCrossPartitions")
+
 	req.Header.Set(restApiHeaderEnableCrossPartitionQuery, "true")
 	req.Header.Set(restApiHeaderParallelizeCrossPartitionQuery, "true")
 	var result *RespQueryDocs
 	for _, pkrange := range resultPkranges.Pkranges {
+		log.Info().Str("pkrange-id", pkrange.Id).Msg("::queryDocumentsCrossPartitions.... query-ing")
 		tempResult := c.queryDocumentsForPkRange(req, pkrange.Id)
 		if result != nil {
 			tempResult.Count += result.Count
@@ -579,6 +586,7 @@ func (c *RestClient) queryDocumentsCrossPartitions(query QueryReq, req *http.Req
 		}
 		result = tempResult
 		if result.CallErr != nil {
+			log.Error().Err(result.CallErr).Str("pkrange-id", pkrange.Id).Msg("::queryDocumentsCrossPartitions queryDocumentsForPkRange")
 			break
 		}
 	}
@@ -757,9 +765,9 @@ func (c *RestClient) buildReplaceOfferContentAndHeaders(currentOffer OfferInfo, 
 
 // ReplaceOfferForResource invokes CosmosDB API to replace/update offer info of a resource.
 //
-//     - If ru > 0 and maxru <= 0: switch to manual throughput and set provisioning value to ru.
-//     - If ru <= 0 and maxru > 0: switch to autopilot throughput and set max provisioning value to maxru.
-//     - If ru <= 0 and maxru <= 0: switch to autopilot throughput with default provisioning value.
+//   - If ru > 0 and maxru <= 0: switch to manual throughput and set provisioning value to ru.
+//   - If ru <= 0 and maxru > 0: switch to autopilot throughput and set max provisioning value to maxru.
+//   - If ru <= 0 and maxru <= 0: switch to autopilot throughput with default provisioning value.
 //
 // Available since v0.1.1
 func (c *RestClient) ReplaceOfferForResource(rid string, ru, maxru int) *RespReplaceOffer {
